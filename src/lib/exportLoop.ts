@@ -36,6 +36,7 @@ export type ShaderParams = {
   grain: number;
   grainLogoOnly: boolean;
   glow: boolean;
+  glowIntensity: number;
   flow: number;
   shape: LiquidMetalShape;
   hasImage: boolean;
@@ -87,7 +88,7 @@ function buildUniforms(params: ShaderParams, image: HTMLImageElement | undefined
     u_seamlessLoop: 1,
     u_grain: params.grain,
     u_grainLogoOnly: params.grainLogoOnly ? 1 : 0,
-    u_glow: params.glow ? 1 : 0,
+    u_glow: params.glow ? params.glowIntensity : 0,
     u_flow: params.flow,
     u_fit: ShaderFitOptions.contain,
     u_scale: params.scale,

@@ -131,34 +131,37 @@ void main() {`,
     color += (grain - 0.5) * u_grain * 0.34 * mask;
   }
 
-  if (u_glow > 0.5) {
-    float halo = 0.0;
+  if (u_glow > 0.001) {
+    float glowA = 0.0;
+    float outside = 1.0 - smoothstep(0.0, 0.16, logoOpacity);
     if (u_isImage) {
-      vec2 texel = 1.0 / vec2(textureSize(u_image, 0));
-      vec2 o1 = texel * 6.0;
-      vec2 o2 = texel * 13.0;
-      float s1 = 0.0;
-      s1 += textureGrad(u_image, uv + vec2( o1.x,  0.0), dudx, dudy).g;
-      s1 += textureGrad(u_image, uv + vec2(-o1.x,  0.0), dudx, dudy).g;
-      s1 += textureGrad(u_image, uv + vec2( 0.0,  o1.y), dudx, dudy).g;
-      s1 += textureGrad(u_image, uv + vec2( 0.0, -o1.y), dudx, dudy).g;
-      s1 += textureGrad(u_image, uv + vec2( o1.x,  o1.y), dudx, dudy).g;
-      s1 += textureGrad(u_image, uv + vec2(-o1.x,  o1.y), dudx, dudy).g;
-      s1 += textureGrad(u_image, uv + vec2( o1.x, -o1.y), dudx, dudy).g;
-      s1 += textureGrad(u_image, uv + vec2(-o1.x, -o1.y), dudx, dudy).g;
-      s1 *= 0.125;
-      float s2 = 0.0;
-      s2 += textureGrad(u_image, uv + vec2( o2.x,  0.0), dudx, dudy).g;
-      s2 += textureGrad(u_image, uv + vec2(-o2.x,  0.0), dudx, dudy).g;
-      s2 += textureGrad(u_image, uv + vec2( 0.0,  o2.y), dudx, dudy).g;
-      s2 += textureGrad(u_image, uv + vec2( 0.0, -o2.y), dudx, dudy).g;
-      s2 *= 0.25;
-      halo = max(s1, s2 * 0.5);
+      vec2 px = vec2(length(dudx), length(dudy)) + 1.0e-6;
+      float sigma = 10.0;
+      float acc = 0.0;
+      float wsum = 0.0;
+      float w0 = 1.0;
+      vec2 p0 = v_imageUV;
+      float m0 = step(0.0, p0.x) * step(p0.x, 1.0) * step(0.0, p0.y) * step(p0.y, 1.0);
+      acc += m0 * w0 * textureGrad(u_image, p0, dudx, dudy).g;
+      wsum += w0;
+      for (int ring = 1; ring <= 5; ring++) {
+        float r = float(ring) * 5.0;
+        float w = exp(-0.5 * (r / sigma) * (r / sigma));
+        for (int i = 0; i < 8; i++) {
+          float a = (float(i) + 0.35 * float(ring)) * 0.7853981634;
+          vec2 p = v_imageUV + vec2(cos(a), sin(a)) * px * r;
+          float m = step(0.0, p.x) * step(p.x, 1.0) * step(0.0, p.y) * step(p.y, 1.0);
+          acc += m * w * textureGrad(u_image, p, dudx, dudy).g;
+          wsum += w;
+        }
+      }
+      glowA = (acc / max(wsum, 0.001)) * outside;
     } else {
-      halo = smoothstep(0.72, 0.98, 1.0 - edge);
+      float fw = max(fwidth(logoOpacity), 1.0 / max(min(u_resolution.x, u_resolution.y), 1.0));
+      float distPx = max(-(logoOpacity - 0.5) / max(fw, 1.0e-5), 0.0);
+      glowA = exp(-0.5 * (distPx / 10.0) * (distPx / 10.0)) * outside;
     }
-    float glowA = smoothstep(0.05, 0.5, halo) * (1.0 - smoothstep(0.0, 0.32, logoOpacity));
-    glowA *= 0.38;
+    glowA *= u_glow;
     color += metalRgb * glowA;
     opacity = max(opacity, glowA);
   }
@@ -167,7 +170,7 @@ void main() {`,
   );
 
 if (
-  !loopingLiquidMetalShader.includes('u_glow') ||
+  !loopingLiquidMetalShader.includes('glowA *= u_glow') ||
   !loopingLiquidMetalShader.includes('u_grainLogoOnly') ||
   !loopingLiquidMetalShader.includes('u_flow * diagBLtoTR') ||
   !loopingLiquidMetalShader.includes('sampleRipples') ||

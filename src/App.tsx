@@ -32,6 +32,7 @@ type SliderKey =
   | 'softness'
   | 'distortion'
   | 'grain'
+  | 'glow'
   | 'flow'
   | 'speed'
   | 'repetition'
@@ -44,6 +45,7 @@ const SLIDERS: { key: SliderKey; label: string; min: number; max: number; step: 
   { key: 'softness', label: 'Pattern Blur', min: 0, max: 1, step: 0.005 },
   { key: 'distortion', label: 'Liquify', min: 0, max: 1, step: 0.005 },
   { key: 'grain', label: 'Texture', min: 0, max: 1, step: 0.01 },
+  { key: 'glow', label: 'Glow', min: 0, max: 1, step: 0.01 },
   { key: 'flow', label: 'Pattern Warp', min: 0, max: 1, step: 0.01 },
   { key: 'speed', label: 'Speed', min: 0, max: 3, step: 0.01 },
   { key: 'repetition', label: 'Pattern Scale', min: 0.25, max: 8, step: 0.05 },
@@ -74,6 +76,7 @@ export default function App() {
   const [grain, setGrain] = useState(0.34);
   const [grainLogoOnly, setGrainLogoOnly] = useState(false);
   const [glow, setGlow] = useState(false);
+  const [glowIntensity, setGlowIntensity] = useState(0.55);
   const [flow, setFlow] = useState(0.28);
   const [speed, setSpeed] = useState(1);
   const [repetition, setRepetition] = useState(0.85);
@@ -100,13 +103,14 @@ export default function App() {
       softness,
       distortion,
       grain,
+      glow: glowIntensity,
       flow,
       speed,
       repetition,
       angle,
       scale,
     }),
-    [refraction, contour, softness, distortion, grain, flow, speed, repetition, angle, scale],
+    [refraction, contour, softness, distortion, grain, glowIntensity, flow, speed, repetition, angle, scale],
   );
 
   const setValue = useCallback((key: SliderKey, next: number) => {
@@ -116,6 +120,7 @@ export default function App() {
       softness: setSoftness,
       distortion: setDistortion,
       grain: setGrain,
+      glow: setGlowIntensity,
       flow: setFlow,
       speed: setSpeed,
       repetition: setRepetition,
@@ -169,7 +174,7 @@ export default function App() {
       u_seamlessLoop: seamlessLoop ? 1 : 0,
       u_grain: grain,
       u_grainLogoOnly: grainLogoOnly ? 1 : 0,
-      u_glow: glow ? 1 : 0,
+      u_glow: glow ? glowIntensity : 0,
       u_flow: flow,
       u_fit: 1,
       u_scale: scale,
@@ -192,6 +197,7 @@ export default function App() {
       grain,
       grainLogoOnly,
       glow,
+      glowIntensity,
       processedUrl,
       refraction,
       repetition,
@@ -246,6 +252,7 @@ export default function App() {
           grain,
           grainLogoOnly,
           glow,
+          glowIntensity,
           flow,
           shape,
           hasImage: Boolean(processedUrl),
